@@ -1,0 +1,403 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="utf-8" />
+  <title>WASH Ambassador Interactive Map</title>
+  <link rel="stylesheet" href="https://unpkg.com/leaflet/dist/leaflet.css" />
+  <style>
+    html, body {
+      margin: 0;
+      padding: 0;
+      height: 100%;
+    }
+    #map { height: 100%; }
+    .sidebar {
+      position: absolute;
+      top: 20px;
+      left: 20px;
+      background: #ffffff;
+      padding: 15px 18px;
+      width: 320px;
+      max-height: 90vh;
+      overflow-y: auto;
+      border-radius: 12px;
+      box-shadow: 0 2px 10px rgba(0,0,0,0.25);
+      font-family: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+      font-size: 14px;
+      z-index: 1000;
+    }
+    .sidebar h3 {
+      margin-top: 0;
+      margin-bottom: 6px;
+      font-size: 18px;
+    }
+    .sidebar small {
+      color: #666;
+    }
+    .sidebar ul {
+      padding-left: 18px;
+      margin: 6px 0 0 0;
+    }
+  </style>
+</head>
+<body>
+
+<div id="map"></div>
+<div class="sidebar" id="infoBox">
+  <h3>WASH Ambassadors</h3>
+  <small>Click a colored region on the map.</small>
+  <p style="margin-top:8px;">Regions follow the WASH-RAG Ambassador areas (R1–R7).</p>
+</div>
+
+<script src="https://unpkg.com/leaflet/dist/leaflet.js"></script>
+<script>
+// ---------- Ambassador data ----------
+const ambassadors = {
+  R1: {
+    name: "North America & English-speaking Caribbean",
+    color: "#c94f4f",
+    ambassadors: [
+      "Robert Wubbena – 5020, Washington, USA",
+      "Richard Chinn – 5150, California, USA",
+      "Traci Perry – 5160, California, USA",
+      "Jill Duerig – 5170, California, USA",
+      "Jagi Shahani – 5170, California, USA",
+      "Clayton Lee – 5180, California, USA",
+      "Kumaraswamy Sivakumaran – 5180, California, USA",
+      "Ciera Martin – 5220, California, USA",
+      "Ellen Hancock – 5220, California, USA",
+      "Wade Nomura – 5240, California, USA",
+      "Graham Sharp – 5240, California, USA",
+      "Peter Lattey – 5280, California, USA",
+      "Pauline Egan – 5280, California, USA",
+      "Sean Phayakapong – 5320, California, USA",
+      "Dave Renfrow – 5390, Montana, USA",
+      "Rich Fisher – 5440, Colorado, USA",
+      "Paul Hebert – 5440, Colorado, USA",
+      "Rob McMaher – 5450, Colorado, USA",
+      "Peter Van Arsdale – 5450, Colorado, USA",
+      "Steve Werner – 5450, Colorado, USA",
+      "Reggie OBrien – 5470, Colorado, USA",
+      "Dale Gray – 5495, Arizona, USA",
+      "Jeff Matera – 5870, Texas, USA",
+      "Sandy Forster – 5810, Texas, USA",
+      "Rodney Kreie – 5680, Kansas, USA",
+      "Isis Mejias – 5890, Texas, USA",
+      "Stan Galanski – 5890, Texas, USA",
+      "Charles Martz – 5950, Minnesota, USA",
+      "Dale Snyder – 5950, Minnesota, USA",
+      "Patricia Hall – 5960, Minnesota, USA",
+      "Chris Roesel – 6040 & 5710, Kansas, USA",
+      "Rob Overly – 6080, Missouri, USA",
+      "Richard Churchman – 6200, Louisiana, USA",
+      "Aaron Frank – 6250, Wisconsin, USA",
+      "Gary Sobotta – 6380, Michigan, USA",
+      "Ron Arkell – 6400, Ontario, Canada",
+      "Marianna Zeidler – 6440, Illinois, USA",
+      "Prakasam Tata – 6450, Illinois, USA",
+      "Woody Collins – 6560, Indiana, USA",
+      "Robert Ruehl – 6600, Ohio, USA",
+      "Ralph Young – 6710, Kentucky, USA",
+      "Anne Mlod – 6970, Florida, USA",
+      "David Bielby – 6960, Florida, USA",
+      "Rosemary Takacs – 6970, Florida, USA",
+      "Ian Rumbles – 6930, Florida, USA",
+      "Anthony Abbate – 6990, Florida, USA",
+      "Yessey Ndyamuhaki – 7010, Ontario, Canada",
+      "Nancy Gilbert – 7040, Ontario, Canada",
+      "Ron Denham – 7070, Ontario, Canada",
+      "Uche Okugo – 7080, Ontario, Canada",
+      "Wale Osamiluyi – 7080, Canada",
+      "Aldo Villanovich – 7080, Ontario, Canada",
+      "John Boot – 7090, Ontario, Canada",
+      "Charlotte Roehm – 7610, Washington DC, USA",
+      "Jonathan Naugle – 7410, Pennsylvania, USA",
+      "Ellsworth Havens – 7475, New Jersey, USA",
+      "Jerry Coughter – 7680, North Carolina, USA",
+      "Eddie Cheung – 7780, Maine, USA",
+      "Andre St-Hilaire – 7790, Quebec, Canada",
+      "Matthew Connolly – 7815, Nova Scotia, Canada",
+      "Richard Cuthbertson – 7815, New Brunswick, Canada",
+      "Carolyn Meub – 7870, Vermont, USA",
+      "Neil Van Dine – 9980, Haiti"
+    ]
+  },
+  R2: {
+    name: "Mexico, Central & South America, Spanish-speaking Caribbean",
+    color: "#b494d3",
+    ambassadors: [
+      "Jose Garcia – 4140, Mexico",
+      "Marcos Calvert – 4170, Mexico",
+      "Ricardo Dominguez – 4250, Honduras",
+      "Francisco Viau – 4250, Guatemala",
+      "William Stumbaugh – 4400, Ecuador",
+      "Juan Simon – 4465, Peru"
+    ]
+  },
+  R3: {
+    name: "UK, Western Europe, Middle East, Central & Eastern Europe, Eurasian Russia",
+    color: "#4ea85a",
+    ambassadors: [
+      "Rob Sisson – 1030, England",
+      "James Onions – 1145, England",
+      "Michael Champion – 1175, England",
+      "Peter Staermose – 1470, Denmark",
+      "Bauke Boersma – 1570, Netherlands",
+      "Chris Engelsman – 1579, Netherlands",
+      "Bas Hendriksen – 1600, Netherlands",
+      "Lucien Moreau – 1660, France",
+      "Philippe Jacq – 1660, France",
+      "Fevzi Tavus – 1841, Turkey",
+      "Axel Schoepa – 1880, Germany",
+      "Gert Stadler – 1920, Austria",
+      "Gilberto Chiarelli – 2042, Italy",
+      "Dilip Mirchandani – 2130, Belgium",
+      "Monica Louie – 2160, Luxembourg",
+      "Jose Maria Martelo – 2202, Spain",
+      "Christine Lebriez – 2203, Spain",
+      "Stuart Amesbury – 2240, Czech Republic",
+      "Irena Brichta – 2240, Czech Republic",
+      "Jamil Mouawad – 2452, Lebanon",
+      "Avner Fuchs – 2490, Israel"
+    ]
+  },
+  R4: {
+    name: "Africa",
+    color: "#f4e5a5",
+    ambassadors: [
+      "Reem Abd EL Meguid – 2451, Egypt",
+      "Sunny Akuopha – 9101, Mali",
+      "Alexis Bih – 9101, Ivory Coast",
+      "Christopher Forster – 9101, Sierra Leone",
+      "Abdul Rashid Wumpini Alhassan – 9104, Ghana",
+      "Eric Defor – 9104, Ghana",
+      "Serge Sourou Oga – 9104, Ghana",
+      "Rockson Dutenya – 9104, Ghana",
+      "Mike Olawa-Cole – 9110, Nigeria",
+      "Mightyman Dikuro – 9141, Nigeria",
+      "John Sodipo – 9141, Nigeria",
+      "Akamnonu Azubuike – 9142, Nigeria",
+      "Blessing Muderhwa Banywesize – 9150, Bukavu, DRC",
+      "Yaouba Ibrahim – 9150, Cameroon",
+      "Henrick Kunkeyani – 9210, Malawi",
+      "Celestino Ouma – 9209, Kenya",
+      "Stella Dongo – 9210, Zimbabwe",
+      "Manuel Mutale – 9210, Zambia",
+      "Patrick Coleman – 9210, Zambia",
+      "Paul Asikoyo – 9212, Kenya",
+      "Patrisio Njeru – 9212, Kenya",
+      "Richard Onono – 9212, Kenya",
+      "Amos Kalumba – 9213, Uganda",
+      "Mohammed Dan-Hassan – 9127, Nigeria",
+      "David Grant – 9400, South Africa",
+      "Peter Herweg – 9400, South Africa"
+    ]
+  },
+  R5: {
+    name: "India, Pakistan, Afghanistan, Nepal, Sri Lanka, Bangladesh, Seychelles, Bhutan",
+    color: "#ee8a24",
+    ambassadors: [
+      "Jeyapaul Chellamuthu – 3000, Madurai, Tamil Nadu, India",
+      "Mahesh Mokalkar – 3030, Wardha, Maharashtra, India",
+      "Ramesh Agrawal – 3054, Jaipur, Rajasthan, India",
+      "Nigam Chaudhari – 3054, Ahmedabad, Gujarat, India",
+      "Ratnesh Kashyap – 3054, Jaipur, India",
+      "Rakesh Kumar Mahajan – 3070, Pathankot, Punjab, India",
+      "Ravindra Bankar – 3132, Latur, Maharashtra, India",
+      "Ravi Vadlamani – 3150, Guntur, India",
+      "Rajesh Bejjangala – 3181, Puttur, Karnataka, India",
+      "Chandrashekar Alilaghatta – 3182, Shimoga North, India",
+      "B.K Prasad – 3190, Bangalore Peenya, India",
+      "Jayakandhan Dandapani – 3206, Tamil Nadu, India",
+      "Dimuthu Daluwatte – 3220, Sri Lanka",
+      "Singanallur Srikanth – 3232, Alwarpet, Chennai, India",
+      "Kameswar Elangbam – 3240, Shillong, India",
+      "Jogesh Gambhir – 3250, Ranchi, India",
+      "Bindu Singh – 3250, Patna, Bihar, India",
+      "Kundleshwar Panigrahi – 3261, Raipur, India",
+      "Ashok Bihari Mohapatra – 3262, Cuttack, India",
+      "Aswini Kumar Kar – 3262, India",
+      "Asher Ali Syed – 3271, Pakistan",
+      "Muhammed Asif Mukaty – 3271, Karachi, Sindh, Pakistan",
+      "Ovais Muhammad – 3271, Pakistan",
+      "T.I.M. Nural Kabir – 3281, Bangladesh",
+      "Ranjeev Shrestha – 3292, Nepal"
+    ]
+  },
+  R6: {
+    name: "Southeast Asia, Philippines, Northeast Asia, China, Asian Russia",
+    color: "#4b8ed9",
+    ambassadors: [
+      "Abe Jacob – 3310, Singapore",
+      "Liza Elorde – 3810, Manila, Philippines"
+    ]
+  },
+  R7: {
+    name: "Australia, New Zealand, Papua New Guinea, South Pacific",
+    color: "#f3e5ce",
+    ambassadors: [
+      "Chuck Fisher – 9560, Northern Australia",
+      "Helene Morse Lane – 9600, Queensland, Australia",
+      "Joselito Tubon – 9620, Papua New Guinea",
+      "Mark Balla – 9810, Southern Australia",
+      "Chris Bloore – 9999, New Zealand"
+    ]
+  }
+};
+
+// ---------- Region polygons (rough) ----------
+const regionsGeoJSON = {
+  "type": "FeatureCollection",
+  "features": [
+    {
+      "type": "Feature",
+      "properties": { "region_id": "R1", "name": "North America & English-speaking Caribbean" },
+      "geometry": {
+        "type": "Polygon",
+        "coordinates": [[
+          [-170, 15],
+          [-50, 15],
+          [-50, 80],
+          [-170, 80],
+          [-170, 15]
+        ]]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": { "region_id": "R2", "name": "Mexico, Central & South America, Spanish Caribbean" },
+      "geometry": {
+        "type": "Polygon",
+        "coordinates": [[
+          [-120, -60],
+          [-30, -60],
+          [-30, 20],
+          [-120, 20],
+          [-120, -60]
+        ]]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": { "region_id": "R3", "name": "Europe, Middle East, Eurasia" },
+      "geometry": {
+        "type": "Polygon",
+        "coordinates": [[
+          [-25, 35],
+          [60, 35],
+          [60, 80],
+          [-25, 80],
+          [-25, 35]
+        ]]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": { "region_id": "R4", "name": "Africa" },
+      "geometry": {
+        "type": "Polygon",
+        "coordinates": [[
+          [-25, -40],
+          [60, -40],
+          [60, 35],
+          [-25, 35],
+          [-25, -40]
+        ]]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": { "region_id": "R5", "name": "South Asia" },
+      "geometry": {
+        "type": "Polygon",
+        "coordinates": [[
+          [55, 5],
+          [100, 5],
+          [100, 35],
+          [55, 35],
+          [55, 5]
+        ]]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": { "region_id": "R6", "name": "East & Southeast Asia" },
+      "geometry": {
+        "type": "Polygon",
+        "coordinates": [[
+          [90, 0],
+          [150, 0],
+          [150, 55],
+          [90, 55],
+          [90, 0]
+        ]]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": { "region_id": "R7", "name": "Australia, New Zealand, South Pacific" },
+      "geometry": {
+        "type": "Polygon",
+        "coordinates": [[
+          [110, -50],
+          [180, -50],
+          [180, 0],
+          [110, 0],
+          [110, -50]
+        ]]
+      }
+    }
+  ]
+};
+
+// ---------- Leaflet setup ----------
+const map = L.map('map').setView([20, 0], 2);
+
+L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+  maxZoom: 6,
+  minZoom: 2,
+  attribution: '&copy; OpenStreetMap contributors'
+}).addTo(map);
+
+const infoBox = document.getElementById("infoBox");
+
+function onEachRegion(feature, layer) {
+  const regionId = feature.properties.region_id;
+  const region = ambassadors[regionId];
+
+  if (!region) return;
+
+  layer.setStyle({
+    fillColor: region.color,
+    fillOpacity: 0.5,
+    color: "#555555",
+    weight: 1
+  });
+
+  layer.on("mouseover", function () {
+    layer.setStyle({ weight: 3, fillOpacity: 0.65 });
+  });
+
+  layer.on("mouseout", function () {
+    layer.setStyle({ weight: 1, fillOpacity: 0.5 });
+  });
+
+  layer.on("click", function () {
+    infoBox.innerHTML = `
+      <h3>${region.name}</h3>
+      <small>${region.ambassadors.length} Ambassador(s)</small>
+      <ul>
+        ${region.ambassadors
+          .map(a => `<li>${a}</li>`)
+          .join("")}
+      </ul>
+    `;
+  });
+}
+
+L.geoJSON(regionsGeoJSON, {
+  onEachFeature: onEachRegion
+}).addTo(map);
+</script>
+</body>
+</html>
